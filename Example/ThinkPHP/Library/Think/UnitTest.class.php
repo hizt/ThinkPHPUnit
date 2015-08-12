@@ -1,8 +1,11 @@
 <?php
 /**
  * 所有测试的基础类
+ * 请将本文件防止在 ??/ThinkPHP/Library/Think 目录下
  */
 namespace Think;
+define('_ROOT_PATH' , dirname( dirname( dirname( dirname( __FILE__)))));
+
 class UnitTest extends Controller {
     const ERROR_PARAM_INTEGER = "断言参数错误，需要integer";
     const ERROR_PARAM_STRING_OR_INTEGER = "断言参数错误，需要integer或string";
@@ -17,9 +20,9 @@ class UnitTest extends Controller {
     const ASSERT_STATUS_ERROR = 2; //断言错误状态
 
     private $assertColors = array(
-        self::ASSERT_STATUS_FAILED => array('#ff0000', 'white'), //背景红色 ， 字体白色
-        self::ASSERT_STATUS_SUCCESS => array('green', 'white'), //背景红色 ， 字体白色
-        self::ASSERT_STATUS_ERROR => array('yellow' , 'white'), //背景黄色， 字体白色
+        self::ASSERT_STATUS_FAILED => array('#FFA38C', 'black'), //背景浅红色 ， 字体白色
+        self::ASSERT_STATUS_SUCCESS => array('#B5FF64', 'black'), //背景， 字体白色
+        self::ASSERT_STATUS_ERROR => array('#AF7942' , 'black'), //背景黄色， 字体白色
     );
 
     private $assertStatusMessage = array(
@@ -60,25 +63,28 @@ class UnitTest extends Controller {
     protected function outputAsHtml(){
         $outPutField = array(
             'statusMessage' => '结果',
+            'data'=> '测试数据',
             'message'=>'备注',
             'class' => '测试类',
-            'function' => '测试方法' ,
-            'fileLine' => '文件（行）',
+            'method' => '测试方法' ,
+            'assertMethod'=>'断言方法',
+            'fileLine' => '所在文件（行）',
             'runtime' => '运行时间'
         );
         $colors = $this->assertColors;
         $assertMessages = $this->assertStatusMessage;
+        $results = $this->getTestResult();
 
         echo <<<EOF
             <style>
                 table {width:100% ; border-collapse: collapse}
-                table td,table th{border:solid 1px #ddd;padding:5px}
+                table td,table th{border:solid 1px #ccc;padding:5px}
                 .num{font-size:1.4em;font-weight:bold}
             </style>
 EOF;
 
         echo   '<h2 style="text-align:center;">';
-        foreach($this->getResultTotal() as $status=>$count){
+        foreach($this->getTestResultTotal() as $status=>$count){
             $color = $colors[$status];
             $assertMessage = $assertMessages[$status];
             echo "<div style=\"display:inline-block;padding:5px;margin-right:10px;background:{$color[0]} ; color:{$color[1]}\">{$assertMessage}(<span class=\"num\">{$count}</span>)</div>";
@@ -92,7 +98,7 @@ EOF;
             echo "<th>{$fieldName}</th>";
         echo '</tr>';
 
-        foreach($this->getTestResult() as $result){
+        foreach($results as $result){
             $color = $colors[$result['status']];
             echo "<tr style=\"background:{$color[0]};color:{$color[1]} \">";
             foreach($outPutField as $fieldKey => $fieldName)
@@ -107,7 +113,7 @@ EOF;
      * 汇总测试结果
      * @return array
      */
-    private function getResultTotal(){
+    private function getTestResultTotal(){
         $total = array();
         foreach($this->getTestResult() as $result){
             $total[$result['status']] ++ ;
@@ -118,25 +124,39 @@ EOF;
     /**
      * 将某个测试结果存入集合中
      * @param $result boolean|int 断言结果
-     * @param $message string 提示信息
+     * @param $testData mixed 测试时传入的数据
+     * @param $message mixed 提示信息
      */
-    protected function pushTestResult($result , $message = ''){
+    protected function pushTestResult($result , $message = '' , $testData = null){
+        if(is_null($testData))
+            $testData = 'NULL';
+        else if(is_bool($testData))
+            $testData = $testData ? 'true' : 'false';
+        else if(is_array($testData))
+            $testData = 'Array：' . json_encode($testData , JSON_UNESCAPED_UNICODE) ;
+        else if(is_object($testData)){
+            $testData = 'Object：' . json_encode((Array)$testData ,  JSON_UNESCAPED_UNICODE) ;
+        }
 
-        if($this->isBoolean($result)){
+        if(is_bool($result)){
             $data['status'] = $result ? self::ASSERT_STATUS_SUCCESS : self::ASSERT_STATUS_FAILED ; //断言状态 ：1：成功 , 0:失败
             $data['message'] = $message;
+            $debugIndex = 2;
         }
         else{
             $data['status'] = self::ASSERT_STATUS_ERROR ;  //断言状态： 2：断言方法参数错误
             $data['message'] = $result;
+            $debugIndex = 3;
         }
         $assertMessage = $this->assertStatusMessage;
         $data['statusMessage'] = $assertMessage[$data['status']] ;
         $info = debug_backtrace();
-        $data['class'] = $info[2]['class'];
-        $data['file'] = $info[2]['file'];
-        $data['method'] = $info[2]['function'];
-        $data['fileLine'] =   $info[2]['file'] . "( Line： {$info[1]['line']} )";
+        $data['class'] = $info[$debugIndex]['class'];
+        $data['data'] = is_array( $testData ) ? json_encode($testData) : $testData;
+        $data['file'] =  str_replace(_ROOT_PATH , '' , $info[$debugIndex-1]['file']);
+        $data['method'] = $info[$debugIndex]['function'];
+        $data['assertMethod'] = $info[$debugIndex-1]['function'];
+        $data['fileLine'] =   $data['file']  . "( Line： {$info[$debugIndex-1]['line']} )";
         $data['runtime'] = self::getRuntime(true) ;
         $GLOBALS['__testResults'][] = $data;  //将测试结果存入
     }
@@ -161,7 +181,7 @@ EOF;
     function assertArrayHasKey($key , $array ,  $message = '')
     {
         if($this->isArray($array) && $this->isStringOrInteger($key) )
-            $this->pushTestResult( !(!is_array($array) || !isset($array[$key])) , $message );
+            $this->pushTestResult( !(!is_array($array) || !isset($array[$key])) , $message , $array);
     }
 
     /**
@@ -170,10 +190,10 @@ EOF;
      * @param $array
      * @param string $message
      */
-    function assertArrayNotHasKey( $key , $array , $message = '')
+    function assertNotArrayHasKey( $key , $array , $message = '')
     {
         if($this->isArray($array) && $this->isStringOrInteger($key))
-            $this->pushTestResult( (!is_array($array) || !isset($array[$key])) , $message );
+            $this->pushTestResult( (!is_array($array) || !isset($array[$key])) , $message , $array);
     }
 
     /**
@@ -185,7 +205,7 @@ EOF;
     public function assertCount( $expectedCount , $array ,  $message = '')
     {
         if($this->isArray($array) && $this->isInteger($expectedCount) )
-            $this->pushTestResult( count($array) === $expectedCount , $message );
+            $this->pushTestResult( count($array) === $expectedCount , $message , $array);
     }
 
     /**
@@ -197,7 +217,7 @@ EOF;
     public function assertNotCount( $expectedCount,  $array ,  $message = '')
     {
         if($this->isArray($array) && $this->isInteger($expectedCount) )
-            $this->pushTestResult( count($array) !== $expectedCount , $message );
+            $this->pushTestResult( count($array) !== $expectedCount , $message , $array );
     }
 
     /**
@@ -207,7 +227,7 @@ EOF;
      * @param $message string 提示语句
      */
     protected function assertEquals( $expected ,  $actual ,$message = ''){
-        $this->pushTestResult( $actual == $expected , $message  );
+        $this->pushTestResult( $actual == $expected , $message , $actual );
     }
 
 
@@ -218,7 +238,7 @@ EOF;
      * @param $message string 提示语句
      */
     protected function assertNotEquals($expected , $actual , $message = ''){
-        $this->pushTestResult( $actual != $expected , $message  );
+        $this->pushTestResult( $actual != $expected , $message  , $actual );
     }
 
 
@@ -229,7 +249,7 @@ EOF;
      * @param $message string 提示语句
      */
     protected function assertSame( $expected ,  $actual ,$message = ''){
-        $this->pushTestResult( $actual === $expected , $message  );
+        $this->pushTestResult( $actual === $expected , $message  , $actual );
     }
 
 
@@ -240,7 +260,7 @@ EOF;
      * @param $message string 提示语句
      */
     protected function assertNotSame($expected , $actual , $message = ''){
-        $this->pushTestResult( $actual !== $expected , $message  );
+        $this->pushTestResult( $actual !== $expected , $message  , $actual );
     }
 
     /**
@@ -249,7 +269,7 @@ EOF;
      * @param $message string 提示语句
      */
     protected function assertNotEmpty($data , $message = ''){
-        $this->pushTestResult( !empty($data) , $message );
+        $this->pushTestResult( !empty($data) , $message ,$data);
     }
 
     /**
@@ -258,7 +278,7 @@ EOF;
      * @param $message string 提示语句
      */
     protected function assertEmpty($data , $message = ''){
-        $this->pushTestResult( empty($data) ,  $message  );
+        $this->pushTestResult( empty($data) ,  $message ,$data );
     }
 
     /**
@@ -269,7 +289,7 @@ EOF;
      */
     public function assertGreater( $expected , $actual, $message = '')
     {
-        $this->pushTestResult( $actual > $expected , $message);
+        $this->pushTestResult( $actual > $expected , $message ,  $actual);
     }
 
     /**
@@ -280,7 +300,7 @@ EOF;
      */
     public function assertGreaterOrEquals( $expected , $actual, $message = '')
     {
-        $this->pushTestResult( $actual >= $expected , $message);
+        $this->pushTestResult( $actual >= $expected , $message ,  $actual);
     }
 
     /**
@@ -291,7 +311,7 @@ EOF;
      */
     public function assertLess( $expected , $actual, $message = '')
     {
-        $this->pushTestResult( $actual < $expected , $message);
+        $this->pushTestResult( $actual < $expected , $message  , $actual);
     }
 
     /**
@@ -302,7 +322,7 @@ EOF;
      */
     public function assertLessOrEquals( $expected , $actual, $message = '')
     {
-        $this->pushTestResult( $actual <= $expected , $message);
+        $this->pushTestResult( $actual <= $expected , $message  , $actual);
     }
 
     /**
@@ -313,7 +333,7 @@ EOF;
     public function assertTrue( $bool , $message = '')
     {
         if($this->isBoolean($bool))
-            $this->pushTestResult( $bool === true , $message);
+            $this->pushTestResult( $bool === true , $message , $bool);
     }
 
     /**
@@ -324,7 +344,7 @@ EOF;
     public function assertFalse( $bool , $message = '')
     {
         if($this->isBoolean($bool))
-            $this->pushTestResult( $bool === false , $message);
+            $this->pushTestResult( $bool === false , $message , $bool);
     }
 
 
@@ -335,7 +355,7 @@ EOF;
      */
     public function assertNull( $data , $message = '')
     {
-        $this->pushTestResult( $data === null, $message);
+        $this->pushTestResult( $data === null, $message , $data);
     }
 
     /**
@@ -345,7 +365,7 @@ EOF;
      */
     public function assertNotNull( $data , $message = '')
     {
-        $this->pushTestResult( $data !== null, $message);
+        $this->pushTestResult( $data !== null, $message , $data) ;
     }
 
 
@@ -358,7 +378,7 @@ EOF;
      */
     protected function assertRegex($regex ,$string , $message = ''){
         if($this->isString($string) && $this->isString($regex))
-        $this->pushTestResult( preg_match($string , $regex)  , $message );
+            $this->pushTestResult( preg_match( $regex , $string) ? true : false  , $message , $string);
     }
 
     /**
@@ -368,7 +388,7 @@ EOF;
      * @param $message string 提示语句
      */
     protected function assertNotRegex($regex , $string, $message = ''){
-        $this->pushTestResult( preg_match($regex , $string)  , $message );
+        $this->pushTestResult( preg_match($regex , $string) ? false : true , $message ,$string);
     }
 
 
@@ -381,7 +401,7 @@ EOF;
     public function assertObjectHasAttribute($attributeName, $object, $message = '')
     {
         if($this->isString($attributeName) && $this->isObject($object) )
-            $this->pushTestResult( $object->hasProperty($attributeName) , $message );
+            $this->pushTestResult( $object->hasProperty($attributeName) , $message ,$object);
     }
 
     /**
@@ -393,7 +413,7 @@ EOF;
     public function assertNotObjectHasAttribute($attributeName, $object, $message = '')
     {
         if($this->isString($attributeName) && $this->isObject($object) )
-            $this->pushTestResult( !$object->hasProperty($attributeName) , $message );
+            $this->pushTestResult( !$object->hasProperty($attributeName) , $message ,$object);
     }
 
 
@@ -406,7 +426,7 @@ EOF;
     public function assertInstanceOf($expectedClssName, $object, $message = '')
     {
         if($this->isString($expectedClssName) && $this->isObject($object))
-            $this->pushTestResult( $object instanceof $expectedClssName , $message );
+            $this->pushTestResult( $object instanceof $expectedClssName , $message , $object );
     }
 
     /**
@@ -418,7 +438,7 @@ EOF;
     public function assertNotInstanceOf($expectedClssName, $object, $message = '')
     {
         if($this->isString($expectedClssName) && $this->isObject($object))
-            $this->pushTestResult( !$object instanceof $expectedClssName , $message );
+            $this->pushTestResult( !$object instanceof $expectedClssName , $message , $object );
     }
 
 
@@ -430,7 +450,7 @@ EOF;
     public function assertJson($json, $message = '')
     {
         if ($this->isString($json))
-            $this->pushTestResult( !is_null(json_decode($json))  ,  $message);
+            $this->pushTestResult( !is_null(json_decode($json))  ,  $message , $json);
     }
 
     /**
@@ -441,7 +461,7 @@ EOF;
     public function assertNotJson($json, $message = '')
     {
         if ($this->isString($json))
-            $this->pushTestResult( is_null(json_decode($json))  ,  $message);
+            $this->pushTestResult( is_null(json_decode($json))  ,  $message , $json);
     }
 
     /**
@@ -511,7 +531,7 @@ EOF;
      * @return boolean
      */
     private function isArray($array){
-        if(!is_numeric($array))
+        if(!is_array($array))
         {
             $this->pushTestResult(self::ERROR_PARAM_ARRAY);
             return false;
