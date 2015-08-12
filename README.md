@@ -28,4 +28,4 @@ class IndexController extends \Think\Controller{
 ```
 * 到浏览器运行 `http://localhost/PROJECT/index.php?m=Test&a=index&a=index
 * 运行结果
-![IMG](mahua-logo.jpg)
+![IMG](https://raw.githubusercontent.com/hizt/ThinkPHPUnit/master/result.png)
