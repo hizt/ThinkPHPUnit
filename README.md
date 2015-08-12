@@ -1,10 +1,12 @@
 # ThinkPHPUnit
-一个为ThinkPHP打造的简单易用的UnitTest 
+一个为ThinkPHP打造的简单易用的UnitTest  <br />
+<br />
+
 
 ##如何使用
-*复制 `UnitTest.class.php` 至ThinkPHP路径  `/ThinkPHP/Library/Think/` 目录下。
-*在`Application`目录下创建`Test/Controller`，编写测试Controller。
-*以编写 IndexController为例:
+* 复制 `UnitTest.class.php` 至ThinkPHP路径  `/ThinkPHP/Library/Think/` 目录下。
+* 在`Application`目录下创建`Test/Controller`，编写测试Controller。
+* 以编写 IndexController为例:
 ```PHP
 namespace \Test\Controller;
 class IndexController extends \Think\Controller{
@@ -24,3 +26,6 @@ class IndexController extends \Think\Controller{
     }
 }
 ```
+* 到浏览器运行 `http://localhost/PROJECT/index.php?m=Test&a=index&a=index
+* 运行结果
+![IMG](mahua-logo.jpg)
