@@ -12,7 +12,7 @@
 namespace \Test\Controller;
 class IndexController extends \Think\Controller{
     function index(){
-        $this->setController( array(__CLASS__ ,'\OtherClassName") );  //设置将要执行的测试类
+        $this->setController( array(__CLASS__ ,'\OtherClassName') );  //设置将要执行的测试类
         $this->run();                               //执行测试代码
         $this->outputAsHtml();                      //以html形式展现结果
         //$this->outputAsCsv();                     //也可以csv文件的形式下载结果
