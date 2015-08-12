@@ -2,6 +2,9 @@
 /**
  * 所有测试的基础类
  * 请将本文件防止在 ??/ThinkPHP/Library/Think 目录下
+ *
+ * @author  T(zthi@qq.com)
+ * @version 0.9
  */
 namespace Think;
 define('_ROOT_PATH' , dirname( dirname( dirname( dirname( __FILE__)))));

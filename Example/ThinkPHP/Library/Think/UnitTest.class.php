@@ -2,11 +2,16 @@
 /**
  * 所有测试的基础类
  * 请将本文件防止在 ??/ThinkPHP/Library/Think 目录下
+ * 
+ * @author  T(zthi@qq.com)
+ * @version 0.9
  */
 namespace Think;
 define('_ROOT_PATH' , dirname( dirname( dirname( dirname( __FILE__)))));
 
 class UnitTest extends Controller {
+
+    // 断言错误提示语句
     const ERROR_PARAM_INTEGER = "断言参数错误，需要integer";
     const ERROR_PARAM_STRING_OR_INTEGER = "断言参数错误，需要integer或string";
     const ERROR_PARAM_NUMERIC = "断言参数错误，需要numeric";
@@ -19,18 +24,32 @@ class UnitTest extends Controller {
     const ASSERT_STATUS_SUCCESS = 1; //断言成功状态
     const ASSERT_STATUS_ERROR = 2; //断言错误状态
 
+    // 测试状态对应的颜色 array( background-color , font-color )
     private $assertColors = array(
         self::ASSERT_STATUS_FAILED => array('#FFA38C', 'black'), //背景浅红色 ， 字体白色
         self::ASSERT_STATUS_SUCCESS => array('#B5FF64', 'black'), //背景， 字体白色
         self::ASSERT_STATUS_ERROR => array('#AF7942' , 'black'), //背景黄色， 字体白色
     );
 
+    // 测试状态提示语句
     private $assertStatusMessage = array(
         self::ASSERT_STATUS_FAILED => '失败',
         self::ASSERT_STATUS_SUCCESS => '成功',
         self::ASSERT_STATUS_ERROR => '错误'
     );
 
+    // 测试结果输出的字段设置，可任意注释相关字段
+    private $outPutField = array(
+            //'status' => '状态',
+            'statusMessage' => '结果',
+            'data'=> '测试数据',
+            'message'=>'备注',
+            'class' => '测试类',
+            'method' => '测试方法' ,
+            'assertMethod'=>'断言方法',
+            'fileLine' => '所在文件（行）',
+            'runtime' => '运行时间'
+    );
 
     private $testControllers = null; //待测试的类名数组
     protected function setController(array $controllers){
@@ -61,16 +80,7 @@ class UnitTest extends Controller {
      * 输出测试结果为html页面
      */
     protected function outputAsHtml(){
-        $outPutField = array(
-            'statusMessage' => '结果',
-            'data'=> '测试数据',
-            'message'=>'备注',
-            'class' => '测试类',
-            'method' => '测试方法' ,
-            'assertMethod'=>'断言方法',
-            'fileLine' => '所在文件（行）',
-            'runtime' => '运行时间'
-        );
+
         $colors = $this->assertColors;
         $assertMessages = $this->assertStatusMessage;
         $results = $this->getTestResult();
@@ -94,14 +104,14 @@ EOF;
 
         echo '<table>';
         echo '<tr>';
-        foreach($outPutField as $fieldKey => $fieldName)
+        foreach($this->outPutField as $fieldKey => $fieldName)
             echo "<th>{$fieldName}</th>";
         echo '</tr>';
 
         foreach($results as $result){
             $color = $colors[$result['status']];
             echo "<tr style=\"background:{$color[0]};color:{$color[1]} \">";
-            foreach($outPutField as $fieldKey => $fieldName)
+            foreach($this->outPutField as $fieldKey => $fieldName)
                 echo "<td>{$result[$fieldKey]}</td>";
             echo "</tr>";
         }
