@@ -1,4 +1,4 @@
-# ThinkPHPUnit v1.0.0
+# ThinkPHPUnit v0.9
 一个为ThinkPHP打造的的UnitTest，简单易用、高效便捷。  <br />
 
 <br />
@@ -33,6 +33,8 @@ class IndexController extends \Think\Controller{
 * 到浏览器运行 `http://localhost/PROJECT_PATH/index.php?m=Test&a=index&a=index`
 * 运行结果
 ![IMG](https://raw.githubusercontent.com/hizt/ThinkPHPUnit/master/result.png)
+
+
 
 <br />
 <br />
