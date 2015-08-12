@@ -47,8 +47,8 @@ class IndexController extends UnitTest {
         $this->assertLess(  1 , $empty);
         $this->assertLessOrEquals( 1 , $notEmpty );
 
-        $this->assertInstanceOf(__CLASS__ , $indexController);
-        $this->assertNotInstanceOf(__CLASS__.'XXX' , $indexController);
+//        $this->assertInstanceOf(__CLASS__ , $indexController);
+//        $this->assertNotInstanceOf(__CLASS__.'XXX' , $indexController);
 
         $this->assertJson($jsonString );
         $this->assertNotJson($jsonString."XXX");
