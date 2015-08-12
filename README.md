@@ -29,7 +29,7 @@ class IndexController extends \Think\Controller{
     }
 }
 ```
-* 到浏览器运行 `http://localhost/PROJECT_PATH/index.php?m=Test&a=index&a=index`
+* 到浏览器运行 `http://localhost/PROJECT_PATH/index.php?m=Test`
 * 运行结果
 ![IMG](https://raw.githubusercontent.com/hizt/ThinkPHPUnit/master/result-screenshot.png)
 
