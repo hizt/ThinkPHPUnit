@@ -4,6 +4,12 @@ use Think\UnitTest;
 
 class IndexController extends UnitTest {
     function index(){
+        //通过自动遍历测试类的方式执行测试
+        $this->run(true);
+    }
+
+    function index2(){
+        //通过设置测试类的方式执行测试
         $this->setController( array(__CLASS__) );
         $this->run();
     }

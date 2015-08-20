@@ -4,12 +4,27 @@
  * 请将本文件防止在 ??/ThinkPHP/Library/Think 目录下
  *
  * @author  T(zthi@qq.com)
+ *
+ * @version 0.95
+ * Date : 2015/8/20
+ * 新增了一个自动遍历测试文件的机制 ( $this->run(true); )
+ * 新增了一个通过URL参数传递测试方法的机制
+ *
+ *
  * @version 0.9
+ * Date: 2015/8/13
  */
 namespace Think;
-define('_ROOT_PATH' , dirname( dirname( dirname( dirname( __FILE__)))));
+defined('ROOT_ABS_PATH') || define('ROOT_ABS_PATH' , dirname( dirname( dirname( dirname( __FILE__))))); //项目绝对路径
+defined('APP_ABS_PATH') || define('APP_ABS_PATH' ,ROOT_ABS_PATH .DIRECTORY_SEPARATOR .  'Application'); //项目Application绝对路径
+defined('TEST_CONTROLLER_FILE_EXT') || define('TEST_CONTROLLER_FILE_EXT' , '.class.php');   //测试文件的后缀
+defined('TEST_CONTROLLER_NAME') || define('TEST_CONTROLLER_NAME' , 'Controller');           //测试文件的控制器名称
 
 class UnitTest extends Controller {
+    function __construct(){
+        parent::__construct();
+        header("Content-type:text/html;charset=utf-8");
+    }
 
     // 断言错误提示语句
     const ERROR_PARAM_INTEGER = "断言参数错误，需要integer";
@@ -35,20 +50,20 @@ class UnitTest extends Controller {
     private $assertStatusMessage = array(
         self::ASSERT_STATUS_FAILED => '失败',
         self::ASSERT_STATUS_SUCCESS => '成功',
-        self::ASSERT_STATUS_ERROR => '错误'
+        self::ASSERT_STATUS_ERROR => '参数错误'
     );
 
     // 测试结果输出的字段设置，可任意注释相关字段
     private $outPutField = array(
-            //'status' => '状态',
-            'statusMessage' => '结果',
-            'data'=> '测试数据',
-            'message'=>'备注',
-            'class' => '测试类',
-            'method' => '测试方法' ,
-            'assertMethod'=>'断言方法',
-            'fileLine' => '所在文件（行）',
-            'runtime' => '运行时间'
+        //'status' => '状态',
+        'statusMessage' => '结果',
+        'data'=> '测试数据',
+        'message'=>'备注',
+        'class' => '测试类',
+        'method' => '测试方法' ,
+        'assertMethod'=>'断言方法',
+        'fileLine' => '所在文件（行）',
+        'runtime' => '运行时间'
     );
 
     private $testControllers = null; //待测试的类名数组
@@ -62,9 +77,39 @@ class UnitTest extends Controller {
 
     /**
      * 开始执行测试，遍历所有 testConrollers，找到所有测试方法，执行测试。
+     * @param $autoGetTestControllers boolean 是否自动获取测试类 , default : false
      */
-    protected function run(){
-        foreach($this->testControllers as $controllerName){
+    protected function run($autoGetTestControllers = false){
+        if($autoGetTestControllers){
+            $debugBacktrace = debug_backtrace();
+            $testControllers = $this->getControllersByDir(dirname($debugBacktrace[0]['file']));
+        }
+        else
+            $testControllers = $this->testControllers;
+
+
+        //从URL读取要执行的测试类,如果为空，则读取全部测试类
+        $allowControllers = null;
+        if(!empty($_GET['controller'])){
+            $allowControllers = explode(',', $_GET['controller']);
+            if(!empty($allowControllers))
+            {
+                foreach($testControllers as $k=>$temp){
+                    $allow = false;
+                    foreach($allowControllers as $tempController) {  //过滤testControllers
+                        if (strstr($temp . TEST_CONTROLLER_FILE_EXT , $tempController . TEST_CONTROLLER_NAME .  TEST_CONTROLLER_FILE_EXT)) {
+                            $allow = true;
+                            break;
+                        }
+                    }
+                    if(!$allow)
+                        unset($testControllers[$k]);
+                }
+            }
+        }
+
+        foreach($testControllers as $controllerName){
+            $controllerName = str_replace(DIRECTORY_SEPARATOR , '\\' , $controllerName);
             $controllerObj = new $controllerName();
             $controllerMethods = get_class_methods($controllerName); //获取测试类的所有方法
             foreach($controllerMethods as $k=>$method){    //遍历测试类的所有方法，判断方法是否以test开始
@@ -74,6 +119,18 @@ class UnitTest extends Controller {
             }
         }
         $this->outputAsHtml();
+    }
+
+    /**
+     * 获取目录下所有的controller
+     * @param $dir
+     * @return array
+     */
+    private function getControllersByDir($dir){
+        $files = glob($dir . DIRECTORY_SEPARATOR . "*" . TEST_CONTROLLER_NAME . TEST_CONTROLLER_FILE_EXT);
+        foreach($files as $k=>$v)
+            $files[$k] =  trim(  str_replace( array(APP_ABS_PATH , TEST_CONTROLLER_FILE_EXT) , '' , $v) , '\\'  );
+        return $files;
     }
 
     /**
@@ -143,10 +200,13 @@ EOF;
         else if(is_bool($testData))
             $testData = $testData ? 'true' : 'false';
         else if(is_array($testData))
-            $testData = 'Array：' . json_encode($testData , JSON_UNESCAPED_UNICODE) ;
+            $testData = 'Array('.count($testData).')：' . json_encode($testData , JSON_UNESCAPED_UNICODE) ;
         else if(is_object($testData)){
             $testData = 'Object：' . json_encode((Array)$testData ,  JSON_UNESCAPED_UNICODE) ;
         }
+
+        if(strlen($testData) > 100)
+            $testData = substr($testData , 0 , 100) . '...';
 
         if(is_bool($result)){
             $data['status'] = $result ? self::ASSERT_STATUS_SUCCESS : self::ASSERT_STATUS_FAILED ; //断言状态 ：1：成功 , 0:失败
@@ -163,7 +223,7 @@ EOF;
         $info = debug_backtrace();
         $data['class'] = $info[$debugIndex]['class'];
         $data['data'] = is_array( $testData ) ? json_encode($testData) : $testData;
-        $data['file'] =  str_replace(_ROOT_PATH , '' , $info[$debugIndex-1]['file']);
+        $data['file'] =  str_replace(ROOT_ABS_PATH , '' , $info[$debugIndex-1]['file']);
         $data['method'] = $info[$debugIndex]['function'];
         $data['assertMethod'] = $info[$debugIndex-1]['function'];
         $data['fileLine'] =   $data['file']  . "( Line： {$info[$debugIndex-1]['line']} )";
@@ -271,6 +331,26 @@ EOF;
      */
     protected function assertNotSame($expected , $actual , $message = ''){
         $this->pushTestResult( $actual !== $expected , $message  , $actual );
+    }
+
+    /**
+     * 断言数据 “不为空的数组”
+     * @param $data array 待测试的数组
+     * @param $message string 提示语句
+     */
+    protected function assertNotEmptyArray($data , $message = ''){
+        if($this->isArray($data))
+            $this->pushTestResult(!empty($data), $message ,$data);
+    }
+
+    /**
+     * 断言数据 “为空的数组”
+     * @param $data array 待测试的数组
+     * @param $message string 提示语句
+     */
+    protected function assertEmptyArray($data , $message = ''){
+        if($this->isArray($data))
+            $this->pushTestResult(empty($data), $message ,$data);
     }
 
     /**
