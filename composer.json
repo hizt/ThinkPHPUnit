@@ -1,5 +1,6 @@
 {
     "name": "zt/unit-test",
+    "version":1.1,
     "type": "library",
     "description": "Thinkphp Unit Test",
     "keywords": ["ThinkPHP","UnitTest"],
@@ -17,7 +18,7 @@
     },
     "autoload": {
         "psr-4": {
-            "zt\\unit\\":"src"
+            "ZT\\Unit\\":"src"
         }
     }
 }

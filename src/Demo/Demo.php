@@ -1,7 +1,8 @@
 <?php
-namespace zt\unit;
-class Test{
-    function test(){
+namespace ZT\Unit\Demo;
+
+class Demo{
+    function demo(){
         echo __CLASS__ . '/' . __FUNCTION__;
     }
 }
