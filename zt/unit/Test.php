@@ -1,5 +1,5 @@
 <?php
 namespace zt\unit;
-class test{
+class Test{
 
 }
