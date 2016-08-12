@@ -1,5 +1,5 @@
 {
-    "name": "zt/tpUnitTest",
+    "name": "zt/unit-test",
     "type": "library",
     "description": "Thinkphp Unit Test",
     "keywords": ["ThinkPHP","UnitTest"],
