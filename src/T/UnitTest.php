@@ -14,6 +14,8 @@
  * @version 0.9
  * Date: 2015/8/13
  */
+
+namespace T;
 use Think\Controller;
 
 defined('ROOT_ABS_PATH') || define('ROOT_ABS_PATH' , dirname( __FILE__) ); //项目绝对路径

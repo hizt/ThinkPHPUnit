@@ -1,7 +1,7 @@
 <?php
 namespace Test\Controller;
 
-use UnitTest;
+use T\UnitTest;
 
 class IndexController extends UnitTest {
     function index(){
