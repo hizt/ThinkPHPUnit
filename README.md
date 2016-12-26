@@ -6,12 +6,11 @@
 
 ##How To Use
 ### 详细使用介绍查看项目`example`,下面列出一个简单的使用介绍
-* 复制 `UnitTest.class.php` 至ThinkPHP路径  `/ThinkPHP/Library/Think/` 目录下。
 * 在`Application`目录下创建`Test/Controller`，编写测试Controller。
 * 以编写 IndexController为例:
 ```PHP
 namespace \Test\Controller;
-class IndexController extends \Think\Controller{
+class IndexController extends UnitTest{
     
     /**
      *   调用方法：

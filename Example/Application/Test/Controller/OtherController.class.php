@@ -1,6 +1,6 @@
 <?php
 namespace Test\Controller;
-use Think\UnitTest;
+use UnitTest;
 
 class OtherController extends UnitTest
 {
